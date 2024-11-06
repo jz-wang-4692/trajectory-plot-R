@@ -1,0 +1,321 @@
+---
+title: "Dynamic Trajectory Plot in R"
+author: "Jiazhen Wang"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'
+)
+```
+
+## Introduction to Trajectory Plot
+
+A trajectory plot displays the path of an object as it changes over time or space. Using lines in 2D or 3D space, it shows how an object's position changes. The X and Y axes represent different dimensions in space (such as longitude and latitude, or X and Y coordinates), while time is typically encoded through color or animation.
+
+
+### What is a Trajectory Plot?
+
+A trajectory plot shows an object's movement path over time or space. The x and y axes represent different spatial dimensions, while time is often encoded as color or animation. These plots are commonly used for visualizing movements such as animal migration, storm paths, or market behavior.
+
+### Applications
+
+1.  **Biology**:
+    -   Cell migration tracking
+    -   Animal movement patterns
+    -   Microorganism behavior studies
+2.  **Meteorology**:
+    -   Storm path prediction
+    -   Air mass movement tracking
+    -   Weather pattern analysis
+3.  **Financial Data**:
+    -   Stock price movements
+    -   Market trend analysis
+    -   Trading pattern visualization
+4.  **Sociology**:
+    -   Social network information spread
+    -   Trend propagation analysis
+    -   Behavioral pattern tracking
+    
+
+
+## Creating a Dynamic Trajectory Plot in R
+
+### Step 1: Install and Load Required Packages
+
+We will use the `ggplot2` package for plotting and the `gganimate` package to add animation.
+
+We also need gifski for rendering generated frames into an animation.
+```{r install-packages, eval=FALSE}
+# Install necessary packages
+install.packages("ggplot2")
+install.packages("gganimate")
+install.packages("gifski")
+```
+
+```{r load-packages}
+# Load the packages
+library(ggplot2)
+library(gganimate)
+library(gifski)
+```
+
+### Step 2: Create Simulated Data
+
+To demonstrate the object movement in 2D space, we create sample data representing random movement over time.
+
+```{r create-data}
+set.seed(123)
+time <- seq(1, 100, by = 1)  # Time points
+x <- cumsum(rnorm(100, mean = 0.5, sd = 0.3))  # Random movement on the X-axis
+y <- cumsum(rnorm(100, mean = 0.3, sd = 0.2))  # Random movement on the Y-axis
+
+# Create a data frame
+data <- data.frame(time = time, x = x, y = y)
+head(data)
+```
+
+### Step 3: Plot the Static Trajectory
+
+First, lets use `ggplot2` to create a static trajectory plot.
+
+```{r static-plot}
+p <- ggplot(data, aes(x = x, y = y)) +
+  geom_path(color = "blue", size = 1) +  # Trajectory line
+  geom_point(aes(color = time), size = 2) +  # Points indicating time
+  scale_color_viridis_c() +  # Use color gradient to represent time
+  labs(title = "Object Trajectory Over Time",
+       x = "X Position", y = "Y Position",
+       color = "Time") +
+  theme_minimal()
+
+# Display the plot
+print(p)
+
+
+```
+
+### Step 4: Create the Dynamic Trajectory Plot
+
+Use `gganimate` to animate the trajectory plot, showing movement over time.
+
+
+```{r dynamic-plot}
+anim <- p +
+  transition_reveal(time) +  # Reveal the path over time
+  labs(title = "Dynamic Trajectory Plot")
+
+# Generate and save the animation
+animated_gif <- animate(anim, renderer = gifski_renderer())  # Ensure gifski is used as the renderer
+
+# We can save the animation
+anim_save("trajectory_animation.gif", animation = animated_gif)
+
+# Display the animation
+anim
+
+
+```
+
+The renderer takes each frame, which is just an image, and assembles them into an animation at the specified frame rate.
+
+When you create an animation with gganimate, you typically produce multiple frames that show how the plot changes over time. The renderer is responsible for taking these individual frames and combining them into a cohesive animation file that you can view or save.
+
+The renderer = gifski_renderer() argument tells animate() to use the gifski package to combine the individual frames of the animation into a single .gif file.
+
+#### Customization
+
+We can customize the trajectory plots in several ways:
+
+
+#####  **Animation Parameters**: Adjust animation speed and smoothness
+
+    ``` r
+    animate(anim, fps = 30, duration = 15)  # Slower, smoother animation
+    ```
+```{r slower smoother animation}
+# Adjust Animation Parameters Example
+# Original animation
+anim <- p +
+  transition_reveal(time) +
+  labs(title = "Slower Smoother Dynamic Trajectory Plot")
+
+# 1. Slower, Smoother Animation (fps = 30, duration = 15 seconds)
+animated_gif_smooth <- animate(anim, fps = 30, duration = 15, renderer = gifski_renderer())
+anim_save("trajectory_animation_smooth.gif", animation = animated_gif_smooth)
+animated_gif_smooth
+```
+
+   **Explanation**:
+
+   - **`fps = 30`**: Sets the frame rate to 30 frames per second, making the animation smoother.
+   - **`duration = 15`**: Specifies the duration of the animation in seconds, making it slower and more detailed.
+   
+   You can adjust these parameters to control the speed and smoothness of the animation based on your preferences.
+   
+   
+#####  **Plot Annotations**: Add text, labels, or annotations to the plot
+
+    ``` r
+    geom_text(aes(label = time), hjust = 0, vjust = 0)  # Add time labels
+    ```
+```{r plot annotations}
+# Plot Annotations Example
+# Original animation
+anim <- p +
+  transition_reveal(time) +
+  labs(title = "Dynamic Trajectory Plot with labled time")
+
+# Add Time Labels to the Animation
+anim_labels <- p +
+  geom_text(aes(label = time), hjust = 0, vjust = 0) +  # Add time labels
+  transition_reveal(time) +
+  labs(title = "Dynamic Trajectory Plot with labled time")
+
+animated_gif_labels <- animate(anim_labels, renderer = gifski_renderer())
+anim_save("trajectory_animation_labels.gif", animation = animated_gif_labels)
+animated_gif_labels
+```
+
+
+   **Explanation**:
+
+   - **`geom_text(aes(label = time), hjust = 0, vjust = 0)`**: Adds text labels to the plot, displaying the time at each point.
+   - You can customize the text position, font size, color, and other properties to enhance the plot's readability and informativeness.
+
+
+##### **Visual Trial**: Add a Fading Trail to the Animation
+
+
+
+
+  ``` r
+  transition_time(time) +
+  shadow_mark(past = TRUE, future = FALSE, alpha = 0.5, color = 'grey')  # Show past data with fading trail
+  ```
+
+**Why Switch to transition_time()?**: With transition_reveal(), data is cumulatively revealed, so previous points are already visible, making shadow_mark() less effective. Using transition_time() shows data specific to each time point, allowing shadow_mark() to highlight past data distinctly.
+
+The `shadow_mark()` function in `gganimate` allows you to retain a visual trail of previous frames, which fades over time. This effect helps to illustrate the path taken over time more effectively.
+
+```{r shadow-mark}
+   # Use shadow_mark() to keep a fading trail of previous points
+anim_shadow <- p +
+  transition_time(time) +
+  shadow_mark(past = TRUE, future = TRUE, alpha = 0.5, color = 'grey') +  # Show past data with specified transparency and color
+  labs(title = "Time: {frame_time}")
+
+   # Generate and save the shadow_mark animation
+   animated_gif_shadow <- animate(anim_shadow, renderer = gifski_renderer())
+   anim_save("trajectory_animation_shadow.gif", animation = animated_gif_shadow)
+
+   # Display the animation
+   animated_gif_shadow
+```
+
+   **Explanation**:
+
+   - **`shadow_mark(alpha = 0.5, size = 1)`**: Adds a fading trail to the animation by retaining previous frames with specified transparency (`alpha`) and size.
+   - This creates an effect where the previous positions remain visible but fade out over time, helping to visualize the trajectory more clearly.
+
+
+### Real-World Example
+
+#### Load the storms dataset
+```{r}
+# Load the storms Dataset from dplyr
+library(dplyr)
+storms <- dplyr::storms
+str(storms)
+head(storms)
+
+```
+#### Data Preprocessing
+Filter Data for Hurricane Katrina in 2005
+```{r}
+# Filter data for Hurricane Katrina in 2005
+katrina <- storms %>%
+  filter(name == "Katrina", year == 2005) %>%
+  mutate(date = as.POSIXct(sprintf("%d-%02d-%02d %02d:00:00", 
+                                  year, month, day, hour), 
+                           format="%Y-%m-%d %H:%M:%S"))
+
+# Check if data is available
+if (nrow(katrina) == 0) {
+  stop("No data found for Hurricane Katrina in 2005.")
+}
+
+# View the filtered data
+head(katrina)
+```
+
+#### Create the Static Trajectory Plot
+```{r}
+# First the static plot (as we created before)
+p_katrina <- ggplot(katrina, aes(x = long, y = lat)) +
+  borders("world", fill = "gray95", color = "gray70") +
+  borders("state", fill = NA, color = "gray70") +
+  geom_path(color = "darkred", size = 1, alpha = 0.7) +
+  geom_point(aes(size = wind, color = wind)) +
+  scale_color_gradientn(
+    colors = c("blue", "green", "yellow", "orange", "red"),
+    name = "Wind Speed\n(knots)"
+  ) +
+  scale_size_continuous(
+    range = c(2, 8),
+    name = "Wind Speed\n(knots)"
+  ) +
+  coord_map(xlim = c(-98, -80), ylim = c(23, 35)) +
+  theme_minimal() +
+  labs(
+    title = "Hurricane Katrina Trajectory (2005)",
+    subtitle = "Wind Speed Shown by Point Size and Color",
+    x = "Longitude",
+    y = "Latitude"
+  ) +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.position = "right"
+  )
+
+p_katrina
+```
+
+#### Create the Dynamic Trajectory Plot
+Using transition_time() and ease_aes()
+```{r}
+# Then animate it
+anim_katrina <- p_katrina +
+  transition_time(date) +
+  ease_aes('linear') +
+  labs(title = "Hurricane Katrina Trajectory: {frame_time}",
+       subtitle = "Wind Speed (knots)",
+       x = "Longitude",
+       y = "Latitude") +
+  shadow_wake(wake_length = 0.1)
+
+# Generate and display the animation
+animated_gif_katrina <- animate(anim_katrina,
+                              fps = 10,
+                              renderer = gifski_renderer(),
+                              width = 800,
+                              height = 600)
+anim_save("katrina_trajectory_animation.gif", animation = animated_gif_katrina)
+# Display the animation
+animated_gif_katrina
+
+```
+
+
+## Summary
+
+Trajectory plots are powerful tools for visualizing dynamic changes in data, commonly used in scientific research and data analysis. By using `ggplot2` and `gganimate`, you can easily create both static and dynamic trajectory plots to reveal temporal changes in your data.
